@@ -1,10 +1,12 @@
+import os
+
 import discord
 from discord import app_commands
 from discord.ext import tasks
 import database as db
 
-guild_id = open("guild_id.txt", "r").read()
-channel_id = int(open("channel_id.txt", "r").read())
+guild_id = os.environ["GUILD_ID"]
+channel_id = int(os.environ["CHANNEL_ID"])
 intents = discord.Intents.default()
 intents.message_content = True
 bot = discord.Client(command_prefix='.', intents=intents)
@@ -13,20 +15,15 @@ tree = app_commands.CommandTree(bot)
 
 @tasks.loop(minutes=5)
 async def send_update():
+    notifications: list[str] = db.periodic_update()
     channel = await bot.fetch_channel(channel_id)
-    await channel.send("message")
+    for notification in notifications:
+        await channel.send(notification)
 
 
 async def send_ephemeral_response(interaction, error, success):
     response = error if error else success
     await interaction.response.send_message(response, ephemeral=True)
-
-
-@tree.command(name="add-quest", description="Add a daily quest", guild=discord.Object(id=guild_id))
-@app_commands.describe(item="The item to look for")
-@app_commands.describe(date="The date to add this item to, in YYYY-MM-DD format")
-async def add_quest(interaction, item: str, date: str):
-    await interaction.response.send_message(f"Quest to look for {item} on {date} added.")
 
 
 @tree.command(name="add-team", description="Add a Team", guild=discord.Object(id=guild_id))
@@ -70,19 +67,20 @@ async def list_teams(interaction):
 
 
 @tree.command(name="add-task", description="Add a task", guild=discord.Object(id=guild_id))
+@app_commands.describe(description="Day to add this task to in DD-MMM-YYYY (e.g. 01-Jan-1970)")
 @app_commands.describe(description="Human readable task description (this is shown to the players)")
 @app_commands.describe(regex_search="Regex search string (this is only used internally)")
 @app_commands.describe(number_required="Number of items of this category required")
-async def add_task(interaction, description: str, regex_search: str, number_required: int):
-    new_id = db.add_task(description, regex_search, number_required)
-    await send_ephemeral_response(interaction, None, f"Successfully added task {new_id}.")
+async def add_task(interaction, day: str, description: str, regex_search: str, number_required: int):
+    db.add_task(day, description, regex_search, number_required)
+    await send_ephemeral_response(interaction, None, f"Successfully added task to {day}.")
 
 
 @bot.event
 async def on_ready():
     print(f'We have logged in as {bot.user}')
     await tree.sync(guild=discord.Object(id=guild_id))
-    # send_update.start()
+    send_update.start()
 
 
-bot.run(open("token.txt", "r").read())
+bot.run(os.environ["DISCORD_TOKEN"])

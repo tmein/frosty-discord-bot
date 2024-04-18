@@ -161,3 +161,4 @@ cython_debug/
 /guild_id.txt
 /token.txt
 /channel_id.txt
+/database/
