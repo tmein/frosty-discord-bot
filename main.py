@@ -50,7 +50,8 @@ async def send_update():
     for notification in notifications:
         embed = discord.Embed(color=0x03f8fc)
         embed.add_field(name=notification.header, value=notification.body, inline=False)
-        embed.set_thumbnail(url=f"https://secure.runescape.com/m=avatar-rs/{notification.rsn}/chat.png")
+        embed.set_thumbnail(
+            url=f"https://secure.runescape.com/m=avatar-rs/{notification.rsn.replace(' ', "_")}/chat.png")
         await channel.send(embed=embed)
 
 
@@ -177,7 +178,7 @@ async def register_drop(interaction, rsn: str, message: str, timestamp: str):
     if notification:
         embed = discord.Embed(color=0x03f8fc)
         embed.add_field(name=notification.header, value=notification.body, inline=False)
-        embed.set_thumbnail(url=f"https://secure.runescape.com/m=avatar-rs/{notification.rsn}/chat.png")
+        embed.set_thumbnail(url=f"https://secure.runescape.com/m=avatar-rs/{notification.rsn.replace(' ', "_")}/chat.png")
         await interaction.response.send_message(embed=embed)
     else:
         await send_ephemeral_response(interaction.response, error, "successfully registered drop")
