@@ -194,6 +194,8 @@ def set_password(day: date, password: str):
 
 def add_drop(rsn: str, message: str, timestamp: datetime) -> (str, DropNotification):
     with Session.begin() as session:
+        error = None
+        notification = None
         player = session.query(Player).filter(Player.rsn == rsn).one_or_none()
         if not player:
             return f"Could not add drop, {rsn} does not exist in database", None
@@ -213,7 +215,7 @@ def add_drop(rsn: str, message: str, timestamp: datetime) -> (str, DropNotificat
             else:
                 error = f"Drop was added successfully, but it did not match a day with tasks"
             session.add(drop)
-            return error,
+            return error, notification
 
 
 def delete_drop(identifier: str):
