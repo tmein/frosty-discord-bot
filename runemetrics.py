@@ -26,5 +26,8 @@ def extract_relevant_activities(player: Player, last_entry: LastEntry) -> list[D
             utc_date = pytz.timezone('Europe/London').localize(utc_date).astimezone(pytz.utc)
             drops.append(
                 Drop(player_id=player.player_id, player=player, message=activity["text"], date=utc_date))
-    last_entry.date = event_log[0]["date"]
+    if not event_log or len(event_log) == 0:
+        print(f"No activity found for {player.rsn}")
+    else:
+        last_entry.date = event_log[0]["date"]
     return drops
