@@ -58,7 +58,6 @@ def process_player(session, current_day: date, notifiable_drops: list[DropNotifi
                                                              f"{task.description}: {completed}/{task.number_required}"))
 
 
-
 def get_drops_for_team_day(session, team: Team, day: date, regex_search: str):
     return session.query(Drop).join(Player).join(Team).filter(
         Drop.date.startswith(day)).filter(
@@ -144,7 +143,7 @@ def list_teams():
             players = ""
             for player in session.query(Player).join(Team).filter(Team.name == team.name).all():
                 players += f"{player.rsn}\n"
-            teams[team.name] = players[0:-1]+f"\n{team.lives*'❤️'}"
+            teams[team.name] = players[0:-1] + f"\n{team.lives * '❤️'}"
         return teams
 
 
@@ -191,6 +190,39 @@ def set_password(day: date, password: str):
         if not day_object:
             return f"Day {day.strftime(DAY_FORMAT)} was not found"
         day_object.password = password
+
+
+def add_drop(rsn: str, message: str, timestamp: datetime) -> (str, DropNotification):
+    with Session.begin() as session:
+        player = session.query(Player).filter(Player.rsn == rsn).one_or_none()
+        if not player:
+            return f"Could not add drop, {rsn} does not exist in database", None
+        else:
+            drop = Drop(player_id=player.player_id, player=player, message=message, date=timestamp)
+            day = get_day(session, timestamp.date())
+            if day:
+                for task in day.tasks:
+                    if re.search(task.regex_search, drop.message):
+                        completed = len(
+                            get_drops_for_team_day(session, drop.player.team, timestamp.date(), task.regex_search))
+                        notification: DropNotification = (DropNotification(drop.player.rsn,
+                                                                           f"{drop.player.rsn} {drop.message[2:]} for {drop.player.team.name}",
+                                                                           f"{task.description}: {completed}/{task.number_required}"))
+                if notification is None:
+                    error = f"Drop was added successfully, but it did not match any task"
+            else:
+                error = f"Drop was added successfully, but it did not match a day with tasks"
+            session.add(drop)
+            return error,
+
+
+def delete_drop(identifier: str):
+    with Session.begin() as session:
+        drop = session.query(Drop).filter(Drop.drop_id == identifier).one_or_none()
+        if not drop:
+            return f"Could not delete drop, {identifier} does not exist in database"
+        else:
+            session.delete(drop)
 
 
 def admin_day_view(day: date):

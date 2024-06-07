@@ -7,7 +7,7 @@ from discord import app_commands
 from discord.ext import tasks
 from table2ascii import table2ascii as t2a, PresetStyle
 import database as db
-from constants import DAY_FORMAT
+from constants import DAY_FORMAT, DATETIME_FORMAT
 from structures import Progress, DropNotification
 
 guild_id = os.environ["GUILD_ID"]
@@ -166,6 +166,28 @@ async def admin_day_view(interaction, day: str = None):
             style=PresetStyle.thin_compact
         )
     await send_ephemeral_response(interaction.response, error, result)
+
+
+@tree.command(name="register-drop", description="Register a drop manually", guild=discord.Object(id=guild_id))
+@app_commands.describe(rsn="Name of the player who got the drop")
+@app_commands.describe(message="Drop message")
+@app_commands.describe(timestamp="Timestamp for drop in DD-mmm-YYYY HH-MM (e.g. 01-Jan-1970 00:00)")
+async def register_drop(interaction, rsn: str, message: str, timestamp: str):
+    error, notification = db.add_drop(rsn, message, datetime.strptime(timestamp, DATETIME_FORMAT))
+    if notification:
+        embed = discord.Embed(color=0x03f8fc)
+        embed.add_field(name=notification.header, value=notification.body, inline=False)
+        embed.set_thumbnail(url=f"https://secure.runescape.com/m=avatar-rs/{notification.rsn}/chat.png")
+        await interaction.response.send_message(embed=embed)
+    else:
+        await send_ephemeral_response(interaction.response, error, "successfully registered drop")
+
+
+@tree.command(name="delete-drop", description="Delete a drop", guild=discord.Object(id=guild_id))
+@app_commands.describe(identifier="identifier of drop to delete")
+async def register_drop(interaction, identifier: str):
+    error = db.delete_drop(identifier)
+    await send_ephemeral_response(interaction.response, error, "successfully deleted drop")
 
 
 @tree.command(name="check-progress", description="Check progress on a day", guild=discord.Object(id=guild_id))
