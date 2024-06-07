@@ -31,7 +31,6 @@ def set_new_day(new_day: date):
 def periodic_update(current_day: date) -> list[DropNotification]:
     with Session.begin() as session:
         notifiable_drops: list[DropNotification] = []
-        current_regex: str = get_regex(session, current_day)
         players: Sequence[Player] = session.execute(select(Player)).scalars().all()
         for player in players:
             process_player(session, current_day, notifiable_drops, player)
@@ -48,13 +47,15 @@ def process_player(session, current_day: date, notifiable_drops: list[DropNotifi
     drops: list[Drop] = runemetrics.extract_relevant_activities(player, last_entry)
     for drop in drops:
         session.add(drop)
-        for task in get_day(session, current_day).tasks:
-            if re.search(task.regex_search, drop.message):
-                completed = len(
-                    get_drops_for_team_day(session, drop.player.team, current_day, task.regex_search))
-                notifiable_drops.append(DropNotification(drop.player.rsn,
-                                                         f"{drop.player.rsn} {drop.message[2:]} for {drop.player.team.name}",
-                                                         f"{task.description}: {completed}/{task.number_required}"))
+        day = get_day(session, current_day)
+        if day:
+            for task in day.tasks:
+                if re.search(task.regex_search, drop.message):
+                    completed = len(
+                        get_drops_for_team_day(session, drop.player.team, current_day, task.regex_search))
+                    notifiable_drops.append(DropNotification(drop.player.rsn,
+                                                             f"{drop.player.rsn} {drop.message[2:]} for {drop.player.team.name}",
+                                                             f"{task.description}: {completed}/{task.number_required}"))
 
 
 
