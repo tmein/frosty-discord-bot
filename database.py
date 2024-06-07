@@ -202,6 +202,7 @@ def add_drop(rsn: str, message: str, timestamp: datetime) -> (str, DropNotificat
         else:
             drop = Drop(player_id=player.player_id, player=player, message=message, date=timestamp)
             day = get_day(session, timestamp.date())
+            session.add(drop)
             if day:
                 for task in day.tasks:
                     if re.search(task.regex_search, drop.message):
@@ -214,7 +215,6 @@ def add_drop(rsn: str, message: str, timestamp: datetime) -> (str, DropNotificat
                     error = f"Drop was added successfully, but it did not match any task"
             else:
                 error = f"Drop was added successfully, but it did not match a day with tasks"
-            session.add(drop)
             return error, notification
 
 
