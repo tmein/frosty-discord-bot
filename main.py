@@ -32,14 +32,15 @@ async def send_update():
             if not error:
                 for team_name, score in progress.scores.items():
                     lives: int = db.update_lives(team_name, score.all_completed)
-                    title: str = f'**{team_name} - {lives*'❤️'} **'
+                    title: str = f'**{team_name} - {lives * '❤️'} **'
                     if score.all_completed:
                         content: str = f'{team_name} completed yesterday\'s quest, congratulations!'
                     elif not score.all_completed and lives > 0:
                         content: str = f'{team_name} failed to complete yesterday\'s quest.'
                     else:
-                        content: str = (f'{team_name} failed to complete yesterday\'s quest and dropped to 0 lives. They '
-                                        f'have been eliminated.')
+                        content: str = (
+                            f'{team_name} failed to complete yesterday\'s quest and dropped to 0 lives. They '
+                            f'have been eliminated.')
                     embed.add_field(name=title, value=content, inline=False)
         error, result = db.get_day_task_description(current_day)
         embed.add_field(name="Today's Task", value=result, inline=False)
@@ -117,7 +118,8 @@ async def add_task(interaction, day: str, description: str, regex_search: str, n
 @app_commands.describe(description="Human readable task description (this is shown to the players)")
 @app_commands.describe(regex_search="Regex search string (this is only used internally)")
 @app_commands.describe(number_required="Number of items of this category required")
-async def edit_task(interaction, identifier: int, description: str, regex_search: str, number_required: int):
+async def edit_task(interaction, identifier: int, description: str = None, regex_search: str = None,
+                    number_required: int = None):
     error = db.edit_task(identifier, description, regex_search, number_required)
     await send_ephemeral_response(interaction.response, error, f"Successfully updated task {identifier}.")
 
@@ -158,14 +160,14 @@ async def admin_day_view(interaction, day: str = None):
         day: date = datetime.now(timezone.utc).date()
     else:
         day: date = datetime.strptime(day, DAY_FORMAT).date()
-    error, required, table = db.admin_day_view(day)
+    error, required, password, table = db.admin_day_view(day)
     result = None
     if error is None:
-        result = required + "\n" + t2a(
+        result = f"All required: {required}" + "\n" + t2a(
             header=["ID", "Description", "# Required", "Regex"],
             body=table,
             style=PresetStyle.thin_compact
-        )
+        ) + "\n" + f"Password: {password}"
     await send_ephemeral_response(interaction.response, error, result)
 
 
@@ -178,7 +180,8 @@ async def register_drop(interaction, rsn: str, message: str, timestamp: str):
     if notification:
         embed = discord.Embed(color=0x03f8fc)
         embed.add_field(name=notification.header, value=notification.body, inline=False)
-        embed.set_thumbnail(url=f"https://secure.runescape.com/m=avatar-rs/{notification.rsn.replace(' ', "_")}/chat.png")
+        embed.set_thumbnail(
+            url=f"https://secure.runescape.com/m=avatar-rs/{notification.rsn.replace(' ', "_")}/chat.png")
         await interaction.response.send_message(embed=embed)
     else:
         await send_ephemeral_response(interaction.response, error, "successfully registered drop")
@@ -199,7 +202,11 @@ async def check_progress(interaction, day: str = None):
     if not day:
         day: date = today
     else:
-        day: date = datetime.strptime(day, DAY_FORMAT).date()
+        try:
+            day: date = datetime.strptime(day, DAY_FORMAT).date()
+        except:
+            await interaction.followup.send("Invalid day format", ephemeral=True)
+            return
     if day > today:
         await interaction.followup.send("You cannot check progress on future days", ephemeral=True)
         return

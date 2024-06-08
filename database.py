@@ -94,7 +94,7 @@ def get_day_task_description(day: date) -> (str, str):
             return f"{day} was not found", None
         joiner: str = " and " if day_object.all_required else " or "
         tasks_description: str = joiner.join([str(task.number_required) + " " + task.description for task in day_object.tasks])
-        password: str = "" if day_object.password is None else "\n\nToday's password: " + day_object.password
+        password: str = "" if day_object.password is None else "\nPassword: _" + day_object.password + "_"
         return None, tasks_description + password
 
 
@@ -163,9 +163,12 @@ def edit_task(identifier: int, description: str, regex_search: str, number_requi
         task = session.query(Task).filter(Task.task_id == identifier).one_or_none()
         if not task:
             return f"Could not edit task {identifier}, this task does not exist"
-        task.description = description
-        task.regex_search = regex_search
-        task.number_required = number_required
+        if description:
+            task.description = description
+        if regex_search:
+            task.regex_search = regex_search
+        if number_required:
+            task.number_required = number_required
         session.commit()
 
 
@@ -231,11 +234,11 @@ def admin_day_view(day: date):
     with Session.begin() as session:
         day_object = session.query(Day).filter(Day.date == day).one_or_none()
         if not day_object:
-            return f"Day {day.strftime(DAY_FORMAT)} was not found", None, None
+            return f"Day {day.strftime(DAY_FORMAT)} was not found", None, None, None
         lines: list[list] = []
         for task in day_object.tasks:
             lines.append([f"{task.task_id}", f"{task.description}", f"{task.number_required}", f"{task.regex_search}"])
-        return None, f"All required: {bool(day_object.all_required)}", lines
+        return None, bool(day_object.all_required), day_object.password, lines
 
 
 def check_day(day: date, progress: Progress):
