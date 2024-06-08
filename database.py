@@ -93,7 +93,7 @@ def get_day_task_description(day: date) -> (str, str):
         if not day_object:
             return f"{day} was not found", None
         joiner: str = " and " if day_object.all_required else " or "
-        tasks_description: str = joiner.join([task.description for task in day_object.tasks])
+        tasks_description: str = joiner.join([str(task.number_required) + " " + task.description for task in day_object.tasks])
         password: str = "" if day_object.password is None else "\n\nToday's password: " + day_object.password
         return None, tasks_description + password
 
