@@ -195,10 +195,14 @@ async def register_drop(interaction, identifier: str):
 @app_commands.describe(day="Day to query in DD-mmm-YYYY (e.g. 01-Jan-1970) - defaults to the current day")
 async def check_progress(interaction, day: str = None):
     await interaction.response.defer()
+    today: date = datetime.now(timezone.utc).date()
     if not day:
-        day: date = datetime.now(timezone.utc).date()
+        day: date = today
     else:
         day: date = datetime.strptime(day, DAY_FORMAT).date()
+    if day > today:
+        await interaction.followup.send("You cannot check progress on future days", ephemeral=True)
+        return
     progress: Progress = Progress()
     error = db.check_day(day, progress)
     if error:

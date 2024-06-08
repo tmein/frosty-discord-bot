@@ -48,7 +48,7 @@ def process_player(session, current_day: date, notifiable_drops: list[DropNotifi
     for drop in drops:
         session.add(drop)
         day = get_day(session, current_day)
-        if day:
+        if day and drop.date.date() == current_day:
             for task in day.tasks:
                 if re.search(task.regex_search, drop.message):
                     completed = len(
