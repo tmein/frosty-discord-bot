@@ -12,7 +12,7 @@ type EventLogEntry = dict[str, str]
 def get_event_log(rsn: str) -> list[EventLogEntry]:
     response = requests.get(f'https://apps.runescape.com/runemetrics/profile/profile?user={rsn}&activities=20',
                             headers={'content-type': 'application/json'})
-    return response.json()["activities"]
+    return response.json().get("activities")
 
 
 def extract_relevant_activities(player: Player, last_entry: LastEntry) -> list[Drop]:
