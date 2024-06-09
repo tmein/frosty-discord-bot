@@ -25,7 +25,7 @@ def extract_relevant_activities(player: Player, last_entry: LastEntry) -> list[D
         for activity in event_log:
             if last_entry.date and last_entry.date == activity["date"]:
                 break
-            elif "I found a" in activity["text"]:
+            elif "I found" in activity["text"]:
                 utc_date = datetime.datetime.strptime(activity["date"], DATETIME_FORMAT)
                 utc_date = pytz.timezone('Europe/London').localize(utc_date).astimezone(pytz.utc)
                 drops.append(
