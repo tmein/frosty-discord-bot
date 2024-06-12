@@ -5,7 +5,6 @@ from datetime import date, datetime, timezone
 import discord
 from discord import app_commands
 from discord.ext import tasks
-from table2ascii import table2ascii as t2a, PresetStyle
 import database as db
 from constants import DAY_FORMAT, DATETIME_FORMAT
 from structures import Progress, DropNotification
@@ -162,12 +161,15 @@ async def admin_day_view(interaction, day: str = None):
         day: date = datetime.strptime(day, DAY_FORMAT).date()
     error, required, password, table = db.admin_day_view(day)
     if error is None:
-        result = f"All required: {required}" + "\n" + t2a(
-            header=["ID", "Description", "# Required", "Regex"],
-            body=table,
-            style=PresetStyle.plain
-        ) + "\n" + f"Password: {password}"
-    await send_ephemeral_response(interaction.response, error, result)
+        embed = discord.Embed(title=f"__**{day}**__", color=0x03f8fc)
+        embed.add_field(name=f'**All Required**', value=required, inline=False)
+        for task in table:
+            content = f"Description: {task[1]}\nRequired: {task[2]}\nRegex: `{task[3]}`"
+            embed.add_field(name=f'**Task {task[0]}**', value=content, inline=False)
+        embed.add_field(name=f'**Password**', value=password, inline=False)
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+    else:
+        await send_ephemeral_response(interaction.response, error, "")
 
 
 @tree.command(name="register-drop", description="Register a drop manually", guild=discord.Object(id=guild_id))
