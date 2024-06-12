@@ -161,12 +161,11 @@ async def admin_day_view(interaction, day: str = None):
     else:
         day: date = datetime.strptime(day, DAY_FORMAT).date()
     error, required, password, table = db.admin_day_view(day)
-    result = None
     if error is None:
         result = f"All required: {required}" + "\n" + t2a(
             header=["ID", "Description", "# Required", "Regex"],
             body=table,
-            style=PresetStyle.thin_compact
+            style=PresetStyle.plain
         ) + "\n" + f"Password: {password}"
     await send_ephemeral_response(interaction.response, error, result)
 
