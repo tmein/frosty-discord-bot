@@ -1,5 +1,5 @@
 discord~=2.3.2
 SQLAlchemy[asyncio]~=2.0.29
-requests~=2.31.0
+requests~=2.32.0
 pytz~=2024.1
 aiosqlite

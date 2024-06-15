@@ -1,9 +1,10 @@
 import asyncio
 import os
 from datetime import date, datetime, timezone
+from io import StringIO
 
 import discord
-from discord import app_commands
+from discord import app_commands, HTTPException
 from discord.ext import tasks
 import database as db
 from constants import DAY_FORMAT, DATETIME_FORMAT
@@ -221,7 +222,19 @@ async def check_progress(interaction, day: str = None):
         for team_name, score in progress.scores.items():
             check: str = '✅️' if score.all_completed else '❌'
             embed.add_field(name=f'**{team_name} - {check} **', value="\n".join(score.lines), inline=False)
-        await interaction.followup.send(embed=embed)
+        try:
+            await interaction.followup.send(embed=embed)
+        except HTTPException:
+            raw = f"Current progress for {day}:\n"
+            for team_name, score in progress.scores.items():
+                check: str = '✅️' if score.all_completed else '❌'
+                raw += f'{team_name} - {check}\n'
+                raw += "\n".join(score.lines)
+                raw += "\n\n"
+            raw = raw[:-2]
+            buffer = StringIO(raw.replace("*", ""))
+            f = discord.File(buffer, filename="progress.txt")
+            await interaction.followup.send(file=f)
 
 
 @bot.event
