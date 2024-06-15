@@ -2,7 +2,7 @@ import re
 from datetime import date, datetime, timezone
 from typing import Sequence, Type
 
-from sqlalchemy import create_engine, select, Select
+from sqlalchemy import create_engine, select, Select, func
 from sqlalchemy.orm import sessionmaker
 from models import Team, Player, Drop, Task, Day, Base, LastEntry, LastDay
 
@@ -50,7 +50,7 @@ def process_player(session, current_day: date, notifiable_drops: list[DropNotifi
         day = get_day(session, current_day)
         if day and drop.date.date() == current_day:
             for task in day.tasks:
-                if re.search(task.regex_search, drop.message):
+                if re.search(task.regex_search, drop.message.lower()):
                     completed = len(
                         get_drops_for_team_day(session, drop.player.team, current_day, task.regex_search))
                     notifiable_drops.append(DropNotification(drop.player.rsn,
@@ -62,7 +62,7 @@ def get_drops_for_team_day(session, team: Team, day: date, regex_search: str):
     return session.query(Drop).join(Player).join(Team).filter(
         Drop.date.startswith(day)).filter(
         Team.team_id == team.team_id).filter(
-        Drop.message.regexp_match(regex_search)).all()
+        func.lower(Drop.message).regexp_match(regex_search)).all()
 
 
 def get_day(session, day: date) -> Day:
@@ -153,7 +153,7 @@ def add_task(task_day: date, description: str, regex_search: str, number_require
         if not day:
             day = Day(date=task_day)
             session.add(day)
-        new_task = Task(description=description, regex_search=regex_search, number_required=number_required,
+        new_task = Task(description=description, regex_search=regex_search.lower(), number_required=number_required,
                         day=day.date)
         session.add(new_task)
 
@@ -166,7 +166,7 @@ def edit_task(identifier: int, description: str, regex_search: str, number_requi
         if description:
             task.description = description
         if regex_search:
-            task.regex_search = regex_search
+            task.regex_search = regex_search.lower()
         if number_required:
             task.number_required = number_required
         session.commit()
@@ -208,7 +208,7 @@ def add_drop(rsn: str, message: str, timestamp: datetime) -> (str, DropNotificat
             session.add(drop)
             if day:
                 for task in day.tasks:
-                    if re.search(task.regex_search, drop.message):
+                    if re.search(task.regex_search, drop.message.lower()):
                         completed = len(
                             get_drops_for_team_day(session, drop.player.team, timestamp.date(), task.regex_search))
                         notification: DropNotification = (DropNotification(drop.player.rsn,

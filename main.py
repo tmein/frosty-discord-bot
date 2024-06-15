@@ -19,6 +19,7 @@ tree = app_commands.CommandTree(bot)
 
 @tasks.loop(minutes=5)
 async def send_update():
+    print("Beginning periodic update")
     current_day: date = datetime.now(timezone.utc).date()
     channel = await bot.fetch_channel(channel_id)
     last_checked_day = db.get_last_day()
@@ -53,7 +54,7 @@ async def send_update():
         embed.set_thumbnail(
             url=f"https://secure.runescape.com/m=avatar-rs/{notification.rsn.replace(' ', "_")}/chat.png")
         await channel.send(embed=embed)
-
+    print("Finished periodic update")
 
 async def send_ephemeral_response(interaction, error, success):
     response = error if error else success
