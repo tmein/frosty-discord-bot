@@ -82,7 +82,7 @@ def update_lives(team: str, all_completed: bool) -> int:
         lives: int = team.lives
         if not all_completed:
             team.lives -= 1
-            lives = lives
+            lives = team.lives
             session.commit()
         return lives
 
